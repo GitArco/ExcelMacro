@@ -1,0 +1,83 @@
+Sub CopiaDati()
+    
+    Dim foglioStampa As Worksheet
+    Dim foglioFC As Worksheet
+    Dim Offerta As String
+    Dim riga As Integer
+    Dim rigaDestinazioneFB As Integer
+    Dim rigaDestinazioneIT As Integer
+    Dim rigaDestinazioneOPT As Integer
+    Dim righeFornitura As Integer
+    Dim righeOptionals As Integer
+    Dim numRigheOfferta As Integer
+    Dim numRigheOptionals As Integer
+
+    'Routine di controllo
+    Set foglioFC = ThisWorkbook.Sheets("FC")
+    righeFornitura = foglioFC.Range("FornituraBase", "FineForn").Rows.Count - 2
+    righeOptionals = foglioFC.Range("Optionals", "FineOpt").Rows.Count - 2
+    
+    Set foglioStampa = ThisWorkbook.Sheets("Stampa_preventivo")
+    
+    Offerta = foglioStampa.Range("A2").Value
+    numRigheOfferta = WorksheetFunction.CountIfs(foglioStampa.Range("B:B"), Offerta, foglioStampa.Range("A:A"), "<>OPT", foglioStampa.Range("A:A"), "<>OPTIONAL", foglioStampa.Range("A:A"), "<>IT1", foglioStampa.Range("A:A"), "<>OF1") - 1
+    
+    numRigheOptionals = WorksheetFunction.CountIfs(foglioStampa.Range("B:B"), "*_OPT*") + WorksheetFunction.CountIfs(foglioStampa.Range("B:B"), "*OPT_*")
+    
+    If numRigheOfferta > righeFornitura Then
+        MsgBox "Poche Righe per Fornitura Base"
+        Exit Sub
+    End If
+    
+    If numRigheOptionals > righeOptionals Then
+        MsgBox "Poche Righe per Optionals"
+        Exit Sub
+    End If
+    
+    'Fornitura base
+    rigaDestinazioneFB = foglioFC.Range("FornituraBase").Row + 1 'Riga di destinazione sarà la riga successiva a quella con nome "FornituraBase"
+    
+    For riga = 3 To foglioStampa.Cells(Rows.Count, 1).End(xlUp).Row
+        If foglioStampa.Cells(riga, 2) = Offerta And _
+           Not (foglioStampa.Cells(riga, 1) = "OPT" Or foglioStampa.Cells(riga, 1) = "OPTIONAL" Or _
+           foglioStampa.Cells(riga, 1) = "IT1") Then
+            
+            foglioFC.Cells(rigaDestinazioneFB, 1) = foglioStampa.Cells(riga, 1).Value
+            foglioFC.Cells(rigaDestinazioneFB, 2) = foglioStampa.Cells(riga, 3).Value
+            foglioFC.Cells(rigaDestinazioneFB, 3) = foglioStampa.Cells(riga, 4).Value
+            
+            rigaDestinazioneFB = rigaDestinazioneFB + 1
+        End If
+    Next riga
+    
+    'Copia dati Trasporto
+    rigaDestinazioneIT = foglioFC.Range("Trasporto").Row + 1 'Riga di destinazione sarà la riga successiva a quella con nome "Trasporto"
+    
+       For riga = 3 To foglioStampa.Cells(Rows.Count, 1).End(xlUp).Row
+        If foglioStampa.Cells(riga, 1) = "IT1" Then
+            
+            foglioFC.Cells(rigaDestinazioneIT, 1) = foglioStampa.Cells(riga, 1).Value
+            foglioFC.Cells(rigaDestinazioneIT, 2) = foglioStampa.Cells(riga, 3).Value
+            foglioFC.Cells(rigaDestinazioneIT, 3) = foglioStampa.Cells(riga, 4).Value
+            
+            rigaDestinazioneIT = rigaDestinazioneIT + 1
+        End If
+    Next riga
+    
+    'Copia dati Optionals
+    rigaDestinazioneOPT = foglioFC.Range("Optionals").Row + 1 'Riga di destinazione sarà la riga successiva a quella con nome "Optionals"
+    
+       For riga = 3 To foglioStampa.Cells(Rows.Count, 1).End(xlUp).Row
+        If foglioStampa.Cells(riga, 2) Like "*_OPT*" Or foglioStampa.Cells(riga, 2) Like "*OPT_*" Then
+            
+            foglioFC.Cells(rigaDestinazioneOPT, 1) = foglioStampa.Cells(riga, 2).Value
+            foglioFC.Cells(rigaDestinazioneOPT, 2) = foglioStampa.Cells(riga, 3).Value
+            foglioFC.Cells(rigaDestinazioneOPT, 3) = foglioStampa.Cells(riga, 4).Value
+            
+            rigaDestinazioneOPT = rigaDestinazioneOPT + 1
+        End If
+    Next riga
+    
+End Sub
+
+
