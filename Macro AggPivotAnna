@@ -1,0 +1,61 @@
+Sub Aggiornamento()
+    Dim pivot As PivotTable
+    Dim foglio As Worksheet
+    Dim pwd As String
+    Dim fogliProtetti() As String
+    Dim i As Integer
+    
+    pwd = "TECALBA2023" ' imposta la password di protezione dei fogli
+    
+    Dim fogliProtettiPresenti As Boolean
+    fogliProtettiPresenti = False
+
+    For Each foglio In ActiveWorkbook.Worksheets
+    If foglio.ProtectContents Then
+        fogliProtettiPresenti = True
+        Exit For
+    End If
+    Next foglio
+
+    If Not fogliProtettiPresenti Then
+    For Each foglio In ActiveWorkbook.Worksheets
+        For Each pivot In foglio.PivotTables
+            On Error Resume Next ' ignora gli errori di aggiornamento delle tabelle pivot
+            pivot.RefreshTable
+            On Error GoTo 0 ' ripristina il normale comportamento degli errori
+        Next pivot
+    Next foglio
+    
+    Exit Sub
+    End If
+    
+    ' Archivia i fogli protetti prima di rimuovere le password
+    i = 0
+    For Each foglio In ActiveWorkbook.Worksheets
+        If foglio.ProtectContents Then
+            ReDim Preserve fogliProtetti(i)
+            fogliProtetti(i) = foglio.Name ' archivia il nome del foglio protetto
+            i = i + 1
+            foglio.Unprotect Password:=pwd ' rimuove la protezione con la password
+        End If
+    Next foglio
+    
+    ' Aggiorna le tabelle pivot su tutti i fogli
+    For Each foglio In ActiveWorkbook.Worksheets
+        For Each pivot In foglio.PivotTables
+            On Error Resume Next ' ignora gli errori di aggiornamento delle tabelle pivot
+            pivot.RefreshTable
+            On Error GoTo 0 ' ripristina il normale comportamento degli errori
+        Next pivot
+    Next foglio
+    
+    For i = 0 To UBound(fogliProtetti)
+    Set foglio = ActiveWorkbook.Worksheets(fogliProtetti(i))
+    foglio.Unprotect Password:=pwd 'rimuovi la protezione con la stessa password
+
+    'aggiungi i permessi per le funzioni desiderate
+    With foglio
+        .Protect Password:=pwd, AllowUsingPivotTables:=True, UserInterfaceOnly:=True
+    End With
+    Next i
+End Sub
