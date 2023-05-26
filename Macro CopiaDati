@@ -1,29 +1,26 @@
 Sub CopiaDati()
     
-    Dim foglioStampa As Worksheet
     Dim foglioFC As Worksheet
-    Dim Offerta As String
-    Dim riga As Integer
-    Dim rigaDestinazioneFB As Integer
-    Dim rigaDestinazioneIT As Integer
-    Dim rigaDestinazioneOPT As Integer
     Dim righeFornitura As Integer
     Dim righeOptionals As Integer
-    Dim numRigheOfferta As Integer
-    Dim numRigheOptionals As Integer
-
-    'Routine di controllo
+   
+    'Routine di controllo numero minimo righe per copiare
     Set foglioFC = ThisWorkbook.Sheets("FC")
     righeFornitura = foglioFC.Range("FornituraBase", "FineForn").Rows.Count - 2
     righeOptionals = foglioFC.Range("Optionals", "FineOpt").Rows.Count - 2
     
-    Set foglioStampa = ThisWorkbook.Sheets("Stampa_preventivo")
+    Dim foglioStampa As Worksheet
+    Dim Offerta As String
+    Dim numRigheOfferta As Integer
+    Dim numRigheOptionals As Integer
     
+    'Definizione del numero di offerta e delle righe esistenti nel foglio
+    Set foglioStampa = ThisWorkbook.Sheets("Stampa_preventivo")
     Offerta = foglioStampa.Range("A2").Value
     numRigheOfferta = WorksheetFunction.CountIfs(foglioStampa.Range("B:B"), Offerta, foglioStampa.Range("A:A"), "<>OPT", foglioStampa.Range("A:A"), "<>OPTIONAL", foglioStampa.Range("A:A"), "<>IT1", foglioStampa.Range("A:A"), "<>OF1") - 1
-    
     numRigheOptionals = WorksheetFunction.CountIfs(foglioStampa.Range("B:B"), "*_OPT*") + WorksheetFunction.CountIfs(foglioStampa.Range("B:B"), "*OPT_*")
-    
+   
+    'Controllo numero che numero righe sia sufficente sia per fornitura base che per optionals
     If numRigheOfferta > righeFornitura Then
         MsgBox "Poche Righe per Fornitura Base"
         Exit Sub
@@ -34,7 +31,13 @@ Sub CopiaDati()
         Exit Sub
     End If
     
-    'Fornitura base
+    
+    Dim riga As Integer
+    Dim rigaDestinazioneFB As Integer
+    Dim rigaDestinazioneIT As Integer
+    Dim rigaDestinazioneOPT As Integer
+   
+    'Copia dati Fornitura base
     rigaDestinazioneFB = foglioFC.Range("FornituraBase").Row + 1 'Riga di destinazione sarà la riga successiva a quella con nome "FornituraBase"
     
     For riga = 3 To foglioStampa.Cells(Rows.Count, 1).End(xlUp).Row
@@ -79,5 +82,4 @@ Sub CopiaDati()
     Next riga
     
 End Sub
-
 
