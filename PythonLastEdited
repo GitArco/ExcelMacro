@@ -1,0 +1,34 @@
+import os
+import shutil
+import datetime
+from openpyxl import load_workbook
+
+def main():
+    # Ask for the path to the Excel file
+    excel_path = input("Please provide the path to the Excel file: ")
+
+    # Create "Cancellare" folder on the desktop if it doesn't exist
+    desktop_path = os.path.join(os.path.expanduser("~"), "Desktop")
+    cancellare_path = os.path.join(desktop_path, "Cancellare")
+    os.makedirs(cancellare_path, exist_ok=True)
+
+    # Copy the Excel file to the "Cancellare" folder
+    file_name = os.path.basename(excel_path)
+    destination_path = os.path.join(cancellare_path, file_name)
+    shutil.copy2(excel_path, destination_path)
+
+    # Load the workbook to get metadata
+    workbook = load_workbook(destination_path)
+    properties = workbook.properties
+
+    # Get the date and time of the last edit and the name of the last person who edited it
+    last_edited_time = properties.modified
+    last_editor = properties.lastModifiedBy
+
+    # Print the information
+    print(f"File copied to: {destination_path}")
+    print(f"Last edited time: {last_edited_time}")
+    print(f"Last editor: {last_editor}")
+
+if __name__ == "__main__":
+    main()
