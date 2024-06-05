@@ -1,0 +1,19 @@
+Sub RielaborazionePreventivo()
+' RielaborazionePreventivo Macro
+' Scelta rapida da tastiera: CTRL+MAIUSC+N
+    
+    Dim daysPassed As Long
+    Dim delaySeconds As Double
+    
+    ' Calculate the number of days passed since today
+    daysPassed = Date - DateSerial(2020, 1, 1) ' Assumes non-leap year
+
+    ' Calculate the fraction of a second to add per day
+    delaySeconds = daysPassed * 0.0000001
+    
+    Application.Wait (Now + delaySeconds)
+    
+    ' Display the duration in a message box
+    MsgBox delaySeconds
+
+End Sub
