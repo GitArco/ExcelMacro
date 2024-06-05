@@ -1,11 +1,18 @@
 import os
 import shutil
-import datetime
+import time
 from openpyxl import load_workbook
+from lxml import etree
+import zipfile
+import tempfile
+
 
 def main():
     # Ask for the path to the Excel file
     excel_path = input("Please provide the path to the Excel file: ")
+
+    # Ask for the new name
+    new_name = input("Please provide the new name for the last editor: ")
 
     # Create "Cancellare" folder on the desktop if it doesn't exist
     desktop_path = os.path.join(os.path.expanduser("~"), "Desktop")
@@ -18,17 +25,77 @@ def main():
     shutil.copy2(excel_path, destination_path)
 
     # Load the workbook to get metadata
-    workbook = load_workbook(destination_path)
+    workbook = load_workbook(destination_path, keep_vba=True)  # keep_vba=True to retain macros
     properties = workbook.properties
 
     # Get the date and time of the last edit and the name of the last person who edited it
     last_edited_time = properties.modified
     last_editor = properties.lastModifiedBy
 
-    # Print the information
-    print(f"File copied to: {destination_path}")
+    # Print the information before update
     print(f"Last edited time: {last_edited_time}")
     print(f"Last editor: {last_editor}")
+
+    # Update the lastModifiedBy property
+    properties.lastModifiedBy = new_name
+
+    # Save the changes to the workbook
+    workbook.save(destination_path)
+
+    # Update the internal metadata to reflect the original last edited time
+    update_excel_metadata(destination_path, last_edited_time)
+
+    # Convert the original last edited time to a timestamp
+    last_edited_timestamp = time.mktime(last_edited_time.timetuple())
+
+    # Set the file's last modification time to the original last edited time
+    os.utime(destination_path, (last_edited_timestamp, last_edited_timestamp))
+
+    # Reload the workbook to confirm changes
+    updated_workbook = load_workbook(destination_path, keep_vba=True)
+    updated_properties = updated_workbook.properties
+
+    # Print the updated information
+    print(f"Updated last editor: {updated_properties.lastModifiedBy}")
+    print(f"Retained last edited time: {updated_properties.modified}")
+
+
+def update_excel_metadata(file_path, last_edited_time):
+    with zipfile.ZipFile(file_path, 'r') as zip_ref:
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            zip_ref.extractall(tmpdirname)
+            core_xml_path = os.path.join(tmpdirname, 'docProps/core.xml')
+
+            # Parse the core.xml file
+            tree = etree.parse(core_xml_path)
+            nsmap = {
+                'cp': 'http://schemas.openxmlformats.org/package/2006/metadata/core-properties',
+                'dc': 'http://purl.org/dc/elements/1.1/',
+                'dcterms': 'http://purl.org/dc/terms/',
+                'dcmitype': 'http://purl.org/dc/dcmitype/',
+                'xsi': 'http://www.w3.org/2001/XMLSchema-instance'
+            }
+
+            core_properties = tree.xpath('/cp:coreProperties', namespaces=nsmap)
+            if core_properties:
+                core_property = core_properties[0]
+
+                # Update the modified property
+                modified_element = core_property.find('dcterms:modified', namespaces=nsmap)
+                if modified_element is not None:
+                    modified_element.text = last_edited_time.isoformat() + 'Z'
+
+            # Write the changes back to the core.xml file
+            tree.write(core_xml_path, xml_declaration=True, encoding='UTF-8')
+
+            # Write the updated content back to the zip archive
+            with zipfile.ZipFile(file_path, 'w') as zip_write:
+                for foldername, subfolders, filenames in os.walk(tmpdirname):
+                    for filename in filenames:
+                        file_path = os.path.join(foldername, filename)
+                        arcname = os.path.relpath(file_path, tmpdirname)
+                        zip_write.write(file_path, arcname)
+
 
 if __name__ == "__main__":
     main()
